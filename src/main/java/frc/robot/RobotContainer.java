@@ -9,6 +9,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
@@ -32,6 +34,11 @@ public class RobotContainer
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
                                                                          "swerve"));
+  private SendableChooser<String> driveChooser = new SendableChooser<>();
+
+  AbsoluteDriveAdv closedAbsoluteDriveAdv;
+  Command driveFieldOrientedDirectAngle;
+  Command driveFieldOrientedAngularVelocity;
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -48,24 +55,28 @@ public class RobotContainer
     // right stick controls the rotational velocity 
     // buttons are quick rotation positions to different ways to face
     // WARNING: default buttons are on the same buttons as the ones defined in configureBindings
-    AbsoluteDriveAdv closedAbsoluteDriveAdv = new AbsoluteDriveAdv(drivebase,
-                                                                   () -> -MathUtil.applyDeadband(driverXbox.getLeftY(),
-                                                                                                 OperatorConstants.LEFT_Y_DEADBAND),
-                                                                   () -> -MathUtil.applyDeadband(driverXbox.getLeftX(),
-                                                                                                 OperatorConstants.LEFT_X_DEADBAND),
-                                                                   () -> -MathUtil.applyDeadband(driverXbox.getRightX(),
-                                                                                                 OperatorConstants.RIGHT_X_DEADBAND),
-                                                                   driverXbox.getHID()::getYButtonPressed,
-                                                                   driverXbox.getHID()::getAButtonPressed,
-                                                                   driverXbox.getHID()::getXButtonPressed,
-                                                                   driverXbox.getHID()::getBButtonPressed);
+    closedAbsoluteDriveAdv = new AbsoluteDriveAdv(drivebase,
+                                        () -> Constants.SPEED_SCALING*MathUtil.applyDeadband(-driverXbox.getLeftY(),
+                                                                      OperatorConstants.LEFT_Y_DEADBAND),
+                                        () -> Constants.SPEED_SCALING*MathUtil.applyDeadband(-driverXbox.getLeftX(),
+                                                                      OperatorConstants.LEFT_X_DEADBAND),
+                                        () -> Constants.SPEED_SCALING*MathUtil.applyDeadband(-driverXbox.getRightX(),
+                                                                      OperatorConstants.RIGHT_X_DEADBAND),
+                                      //  driverXbox.getHID()::getYButtonPressed,
+                                      //  driverXbox.getHID()::getAButtonPressed,
+                                      //  driverXbox.getHID()::getXButtonPressed,
+                                      //  driverXbox.getHID()::getBButtonPressed);
+                                        ()-> (driverXbox.getHID().getPOV() == 0),
+                                        ()-> (driverXbox.getHID().getPOV() == 180),
+                                        ()-> (driverXbox.getHID().getPOV() == 90),
+                                        ()-> (driverXbox.getHID().getPOV() == 270));
 
     // Applies deadbands and inverts controls because joysticks
     // are back-right positive while robot
     // controls are front-left positive
     // left stick controls translation
     // right stick controls the desired angle NOT angular rotation
-    Command driveFieldOrientedDirectAngle = drivebase.driveCommand(
+    driveFieldOrientedDirectAngle = drivebase.driveCommand(
         () -> Constants.SPEED_SCALING * MathUtil.applyDeadband(-driverXbox.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
         () -> Constants.SPEED_SCALING * MathUtil.applyDeadband(-driverXbox.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
         () -> -driverXbox.getRightX(),
@@ -76,17 +87,23 @@ public class RobotContainer
     // controls are front-left positive
     // left stick controls translation
     // right stick controls the angular velocity of the robot
-    Command driveFieldOrientedAngularVelocity = drivebase.driveCommand(
+    driveFieldOrientedAngularVelocity = drivebase.driveCommand(
         () -> Constants.SPEED_SCALING * MathUtil.applyDeadband(-driverXbox.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
         () -> Constants.SPEED_SCALING * MathUtil.applyDeadband(-driverXbox.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
         () -> Constants.ANGLE_SPEED_SCALING * -driverXbox.getRightX());
 
-    Command driveFieldOrientedDirectAngleSim = drivebase.simDriveCommand(
-        () -> MathUtil.applyDeadband(-driverXbox.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
-        () -> MathUtil.applyDeadband(-driverXbox.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
-        () -> -driverXbox.getRightX());
+    // Command driveFieldOrientedDirectAngleSim = drivebase.simDriveCommand(
+    //     () -> MathUtil.applyDeadband(-driverXbox.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
+    //     () -> MathUtil.applyDeadband(-driverXbox.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
+    //     () -> -driverXbox.getRightX());
 
-    drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
+    // Setup chooser for selecting drive mode
+    driveChooser.setDefaultOption("Drive Mode - AngularVelocity", "angular");
+    driveChooser.addOption("Drive Mode - Direct Angle", "direct");
+    driveChooser.addOption("Drive Mode - Advanced", "advanced");
+    SmartDashboard.putData(driveChooser);
+
+    setDriveMode();
   }
 
   /**
@@ -101,13 +118,13 @@ public class RobotContainer
     // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
 
     driverXbox.a().onTrue((Commands.runOnce(drivebase::zeroGyro)));
-    // driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
+    driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
     driverXbox.b().whileTrue(
         Commands.deferredProxy(() -> drivebase.driveToPose(
                                    new Pose2d(new Translation2d(4, 4), Rotation2d.fromDegrees(0)))
                               ));
     driverXbox.y().whileTrue(drivebase.aimAtSpeaker(2));
-    driverXbox.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
+    driverXbox.leftBumper().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
   }
 
   /**
@@ -124,7 +141,21 @@ public class RobotContainer
 
   public void setDriveMode()
   {
-    //drivebase.setDefaultCommand();
+    switch (driveChooser.getSelected()) {
+
+      case "direct":
+        drivebase.setDefaultCommand(driveFieldOrientedDirectAngle);
+        return;
+
+      case "advanced":
+        drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
+        return;
+
+      case "angular":
+      default:
+        drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
+
+    }
   }
 
   public void setMotorBrake(boolean brake)
