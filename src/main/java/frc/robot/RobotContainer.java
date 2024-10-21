@@ -45,6 +45,7 @@ public class RobotContainer
   AbsoluteDriveAdv closedAbsoluteDriveAdv;
   Command driveFieldOrientedDirectAngle;
   Command driveFieldOrientedAngularVelocity;
+  Command driveRobotOrientedAngularVelocity;
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -107,7 +108,14 @@ public class RobotContainer
     driveFieldOrientedAngularVelocity = drivebase.driveCommand(
         () -> Constants.SPEED_SCALING * MathUtil.applyDeadband(-driverXbox.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
         () -> Constants.SPEED_SCALING * MathUtil.applyDeadband(-driverXbox.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
-        () -> Constants.ANGLE_SPEED_SCALING * -driverXbox.getRightX());
+        () -> Constants.ANGLE_SPEED_SCALING * -driverXbox.getRightX(),
+        true);
+
+    driveRobotOrientedAngularVelocity = drivebase.driveCommand(
+        () -> Constants.SPEED_SCALING * MathUtil.applyDeadband(-driverXbox.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
+        () -> Constants.SPEED_SCALING * MathUtil.applyDeadband(-driverXbox.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
+        () -> Constants.ANGLE_SPEED_SCALING * -driverXbox.getRightX(),
+        false);
 
     // Command driveFieldOrientedDirectAngleSim = drivebase.simDriveCommand(
     //     () -> MathUtil.applyDeadband(-driverXbox.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
@@ -118,6 +126,7 @@ public class RobotContainer
     driveChooser.setDefaultOption("Drive Mode - AngularVelocity", "angular");
     driveChooser.addOption("Drive Mode - Direct Angle", "direct");
     driveChooser.addOption("Drive Mode - Advanced", "advanced");
+    driveChooser.addOption("Drive Mode - Robot Oriented", "robot");
     SmartDashboard.putData(driveChooser);
 
     setDriveMode();
@@ -171,9 +180,14 @@ public class RobotContainer
         drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
         return;
 
+      case "robot":
+        drivebase.setDefaultCommand(driveRobotOrientedAngularVelocity);
+        return;
+
       case "angular":
       default:
-        drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
+        drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);        
+
 
     }
   }

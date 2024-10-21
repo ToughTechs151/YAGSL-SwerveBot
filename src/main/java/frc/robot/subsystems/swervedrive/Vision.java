@@ -478,7 +478,6 @@ public class Vision
       if (Robot.isSimulation())
       {
         systemSim.addCamera(cameraSim, robotToCamTransform);
-//        cameraSim.enableDrawWireframe(true);
       }
     }
   }
