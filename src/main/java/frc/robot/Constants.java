@@ -24,7 +24,8 @@ public final class Constants
   public static final double ROBOT_MASS = (148 - 20.3) * 0.453592; // 32lbs * kg per pound
   public static final Matter CHASSIS    = new Matter(new Translation3d(0, 0, Units.inchesToMeters(8)), ROBOT_MASS);
   public static final double LOOP_TIME  = 0.13; //s, 20ms + 110ms sprk max velocity lag
-  public static final double MAX_SPEED  = Units.feetToMeters(14.5);
+  // Speed for Neo Vortex at 6700 RPM, 6.75:1 gears and 4" wheels
+  public static final double MAX_SPEED  = Units.feetToMeters(6700/6.75/60*4*Math.PI/12);
   public static final Boolean OPEN_LOOP  = false;
   public static final Boolean FIELD_RELATIVE  = true;
   public static final double SPEED_SCALING = 0.25;
