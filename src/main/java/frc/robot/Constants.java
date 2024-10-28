@@ -31,7 +31,8 @@ public final class Constants
   public static final double SPEED_SCALING = 0.25;
   public static final double ANGLE_SPEED_SCALING = Math.pow(SPEED_SCALING, 1/3.0);
 
-
+  public static final Boolean ENABLE_VISION  = false;
+ 
       // Maximum speed of the robot in meters per second, used to limit acceleration.
 
   public static final class AutonConstants

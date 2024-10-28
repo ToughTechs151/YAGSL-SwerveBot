@@ -61,7 +61,7 @@ public class SwerveSubsystem extends SubsystemBase
   /**
    * Enable vision odometry updates while driving.
    */
-  private final boolean visionDriveTest = true;
+  private final boolean visionDriveTest = Constants.ENABLE_VISION;
 
   /**
    * Initialize {@link SwerveDrive} with the directory provided.
@@ -104,10 +104,6 @@ public class SwerveSubsystem extends SubsystemBase
       swerveDrive.stopOdometryThread();
     }
     setupPathPlanner();
-
-    DataLogManager.log(String.format("Max Velocity: %f", swerveDrive.getMaximumVelocity()));
-    DataLogManager.log("Open Loop: " +  Constants.OPEN_LOOP.toString());
-    DataLogManager.log("Field Relative: " +  Constants.FIELD_RELATIVE.toString());
 
   }
 
