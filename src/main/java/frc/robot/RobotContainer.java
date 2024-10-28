@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -47,11 +48,14 @@ public class RobotContainer
   Command driveFieldOrientedAngularVelocity;
   Command driveRobotOrientedAngularVelocity;
 
+  private final PowerDistribution pdp = new PowerDistribution();
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer()
   {
+    // Setup Auto commands and chooser
     NamedCommands.registerCommand(
         "SayHello",
         new InstantCommand(()->DataLogManager.log("Hello ...")));
@@ -62,6 +66,9 @@ public class RobotContainer
 
     autoChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData(autoChooser);
+
+    // Publish PDP data for dashboard and logging
+    SmartDashboard.putData(pdp);
 
     // Configure the trigger bindings
     configureBindings();
