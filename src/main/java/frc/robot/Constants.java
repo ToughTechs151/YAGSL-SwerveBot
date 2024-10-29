@@ -28,7 +28,7 @@ public final class Constants
   public static final double MAX_SPEED  = Units.feetToMeters(6700/6.75/60*4*Math.PI/12);
   public static final Boolean OPEN_LOOP  = false;
   public static final Boolean FIELD_RELATIVE  = true;
-  public static final double SPEED_SCALING = 0.25;
+  public static final double SPEED_SCALING = 0.5;
   public static final double ANGLE_SPEED_SCALING = Math.pow(SPEED_SCALING, 1/3.0);
 
   public static final Boolean ENABLE_VISION  = false;
