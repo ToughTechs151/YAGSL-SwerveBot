@@ -105,6 +105,16 @@ public class SwerveSubsystem extends SubsystemBase
     }
     setupPathPlanner();
 
+    if (isRedAlliance())
+    {
+      //Set the pose 180 degrees
+      resetOdometry(new Pose2d(15.2, 5.6, Rotation2d.fromDegrees(0)));
+    } else
+    {
+      resetOdometry(new Pose2d(1.35, 5.6, Rotation2d.fromDegrees(0)));
+    }
+    zeroGyroWithAlliance();
+
   }
 
   /**
@@ -367,12 +377,13 @@ public class SwerveSubsystem extends SubsystemBase
   {
     return run(() -> {
       // Make the robot move
+      double direction = isRedAlliance() && fieldRelative ? -1:1;
       swerveDrive.drive(SwerveMath.scaleTranslation(new Translation2d(
-                            translationX.getAsDouble() * swerveDrive.getMaximumVelocity(),
-                            translationY.getAsDouble() * swerveDrive.getMaximumVelocity()), 0.8),
+                            direction*translationX.getAsDouble() * swerveDrive.getMaximumVelocity(),
+                            direction*translationY.getAsDouble() * swerveDrive.getMaximumVelocity()), 0.8),
                         Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumAngularVelocity(),
                         fieldRelative,
-                        Constants.OPEN_LOOP);
+                        false);
     });
   }
 
