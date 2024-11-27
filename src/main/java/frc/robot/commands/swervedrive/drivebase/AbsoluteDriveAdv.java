@@ -100,6 +100,18 @@ public class AbsoluteDriveAdv extends Command
     {
       headingY = -1;
     }
+    
+    // Adjust orientation based on alliance
+    var alliance = DriverStation.getAlliance();
+    boolean isRedAlliance = alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
+    double xVelocity = vX.getAsDouble();
+    double yVelocity = vY.getAsDouble();
+    if (isRedAlliance) {
+      xVelocity = -xVelocity;
+      yVelocity = -yVelocity;
+      headingX = -headingX;
+      headingY = -headingY;
+    }
 
     // Prevent Movement After Auto
     if (resetHeading)
@@ -117,18 +129,6 @@ public class AbsoluteDriveAdv extends Command
       resetHeading = false;
     }
 
-    // Adjust orientation based on alliance
-    var alliance = DriverStation.getAlliance();
-    boolean isRedAlliance = alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
-    double xVelocity = -vX.getAsDouble();
-    double yVelocity = -vY.getAsDouble();
-    if (isRedAlliance) {
-      xVelocity = -xVelocity;
-      yVelocity = -yVelocity;
-      headingX = -headingX;
-      headingY = -headingY;
-    }
-
     ChassisSpeeds desiredSpeeds = swerve.getTargetSpeeds(xVelocity, yVelocity, headingX, headingY);
 
     // Limit velocity to prevent tippy
@@ -138,6 +138,10 @@ public class AbsoluteDriveAdv extends Command
                                            swerve.getSwerveDriveConfiguration());
     SmartDashboard.putNumber("LimitedTranslation", translation.getX());
     SmartDashboard.putString("Translation", translation.toString());
+    SmartDashboard.putNumber("xVelocity", xVelocity);
+    SmartDashboard.putNumber("xVelocity", xVelocity);
+
+
 
     // Make the robot move
     if (headingX == 0 && headingY == 0 && Math.abs(headingAdjust.getAsDouble()) > 0)
