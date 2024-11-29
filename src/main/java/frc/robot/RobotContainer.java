@@ -8,6 +8,8 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.AddressableLED;
+import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.PowerDistribution;
@@ -47,6 +49,9 @@ public class RobotContainer
   Command driveFieldOrientedAngularVelocity;
   Command driveRobotOrientedAngularVelocity;
 
+  private AddressableLED m_led;
+  private AddressableLEDBuffer m_ledBuffer;
+
   private final PowerDistribution pdp = new PowerDistribution();
 
   /**
@@ -54,6 +59,9 @@ public class RobotContainer
    */
   public RobotContainer()
   {
+    // Setup an addressable LED strip on a PWM channel
+    setupLEDs();
+    
     // Setup Auto commands and chooser
     NamedCommands.registerCommand(
         "SayHello",
@@ -62,6 +70,19 @@ public class RobotContainer
     NamedCommands.registerCommand(
         "SayGoodbye",
         new InstantCommand(()->DataLogManager.log("... Goodbye")));
+
+    NamedCommands.registerCommand(
+        "Set LED Red",
+        new InstantCommand(()->solidRGB(128,0,0)));
+
+    NamedCommands.registerCommand(
+        "Set LED Green",
+        new InstantCommand(()->solidRGB(0,128,0)));
+
+    NamedCommands.registerCommand(
+        "Set LED Blue",
+        new InstantCommand(()->solidRGB(0,0,128)));
+
 
     autoChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData(autoChooser);
@@ -131,6 +152,7 @@ public class RobotContainer
     SmartDashboard.putData(driveChooser);
 
     setDriveMode();
+    solidRGB(128,128,0);
   }
 
   /**
@@ -191,5 +213,28 @@ public class RobotContainer
   public void setMotorBrake(boolean brake)
   {
     drivebase.setMotorBrake(brake);
+  }
+
+  // Setup an interface for an addressable LED strip
+  private void setupLEDs(){
+    m_led = new AddressableLED(1);
+
+    // Create the buffer. Start empty output
+    // Length is expensive to set, so only set it once, then just update data
+    m_ledBuffer = new AddressableLEDBuffer(30);
+    m_led.setLength(m_ledBuffer.getLength());
+
+    // Set the data
+    m_led.setData(m_ledBuffer);
+    m_led.start();
+  }
+
+  // Set all LEDs in the strip to a solid color
+  private void solidRGB(int red, int green, int blue) {
+    for (var i = 0; i < m_ledBuffer.getLength(); i++) {
+      // Sets the specified LED to the RGB values for red
+      m_ledBuffer.setRGB(i, red, green, blue);
+    }
+    m_led.setData(m_ledBuffer);
   }
 }
