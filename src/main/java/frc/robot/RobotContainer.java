@@ -217,7 +217,7 @@ public class RobotContainer
 
   // Setup an interface for an addressable LED strip
   private void setupLEDs(){
-    m_led = new AddressableLED(1);
+    m_led = new AddressableLED(0);
 
     // Create the buffer. Start empty output
     // Length is expensive to set, so only set it once, then just update data
