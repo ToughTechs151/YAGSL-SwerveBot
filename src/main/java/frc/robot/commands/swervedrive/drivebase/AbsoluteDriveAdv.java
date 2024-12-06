@@ -28,7 +28,7 @@ public class AbsoluteDriveAdv extends Command
   private final DoubleSupplier  vX, vY;
   private final DoubleSupplier  headingAdjust;
   private final BooleanSupplier lookAway, lookTowards, lookLeft, lookRight;
-  private       boolean         resetHeading = false;
+  private boolean resetHeading = false;
 
   /**
    * Used to drive a swerve robot in full field-centric mode.  vX and vY supply translation inputs, where x is
@@ -100,7 +100,7 @@ public class AbsoluteDriveAdv extends Command
     {
       headingY = -1;
     }
-    
+
     // Adjust orientation based on alliance
     var alliance = DriverStation.getAlliance();
     boolean isRedAlliance = alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
@@ -138,10 +138,6 @@ public class AbsoluteDriveAdv extends Command
                                            swerve.getSwerveDriveConfiguration());
     SmartDashboard.putNumber("LimitedTranslation", translation.getX());
     SmartDashboard.putString("Translation", translation.toString());
-    SmartDashboard.putNumber("xVelocity", xVelocity);
-    SmartDashboard.putNumber("xVelocity", xVelocity);
-
-
 
     // Make the robot move
     if (headingX == 0 && headingY == 0 && Math.abs(headingAdjust.getAsDouble()) > 0)
