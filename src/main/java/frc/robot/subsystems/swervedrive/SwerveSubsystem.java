@@ -26,7 +26,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -84,6 +83,19 @@ public class SwerveSubsystem extends SubsystemBase
    */
   public SwerveSubsystem(File directory)
   {
+    // Angle conversion factor is 360 / (GEAR RATIO * ENCODER RESOLUTION)
+    //  In this case the gear ratio is 12.8 motor revolutions per wheel rotation.
+    //  The encoder resolution per motor revolution is 1 per motor revolution.
+    double angleConversionFactor = SwerveMath.calculateDegreesPerSteeringRotation(12.8);
+    // Motor conversion factor is (PI * WHEEL DIAMETER IN METERS) / (GEAR RATIO * ENCODER RESOLUTION).
+    //  In this case the wheel diameter is 4 inches, which must be converted to meters to get meters/second.
+    //  The gear ratio is 6.75 motor revolutions per wheel rotation.
+    //  The encoder resolution per motor revolution is 1 per motor revolution.
+    double driveConversionFactor = SwerveMath.calculateMetersPerRotation(Units.inchesToMeters(4), 6.75);
+    System.out.println("\"conversionFactors\": {");
+    System.out.println("\t\"angle\": {\"factor\": " + angleConversionFactor + " },");
+    System.out.println("\t\"drive\": {\"factor\": " + driveConversionFactor + " }");
+    System.out.println("}");
 
     // Configure the Telemetry before creating the SwerveDrive to avoid unnecessary objects being created.
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
@@ -328,8 +340,8 @@ public class SwerveSubsystem extends SubsystemBase
   {
 // Create the constraints to use while pathfinding
     PathConstraints constraints = new PathConstraints(
-        swerveDrive.getMaximumVelocity()*Constants.SPEED_SCALING, 4.0,
-        swerveDrive.getMaximumAngularVelocity()*Constants.SPEED_SCALING, Units.degreesToRadians(720));
+        swerveDrive.getMaximumChassisVelocity()*Constants.SPEED_SCALING, 4.0,
+        swerveDrive.getMaximumChassisAngularVelocity()*Constants.SPEED_SCALING, Units.degreesToRadians(720));
 
 // Since AutoBuilder is configured, we can use it to build pathfinding commands
     return AutoBuilder.pathfindToPose(
@@ -351,7 +363,7 @@ public class SwerveSubsystem extends SubsystemBase
   throws IOException, ParseException
   {
     SwerveSetpointGenerator setpointGenerator = new SwerveSetpointGenerator(RobotConfig.fromGUISettings(),
-                                                                            swerveDrive.getMaximumAngularVelocity());
+                                                                            swerveDrive.getMaximumChassisAngularVelocity());
     AtomicReference<SwerveSetpoint> prevSetpoint
         = new AtomicReference<>(new SwerveSetpoint(swerveDrive.getRobotVelocity(),
                                                    swerveDrive.getStates(),
@@ -382,17 +394,16 @@ public class SwerveSubsystem extends SubsystemBase
                                             DoubleSupplier rotationX)
   {
     SwerveController swerveController = swerveDrive.getSwerveController();
-    swerveDrive.setDriveMotorModel(DCMotor.getNEO(1));
     try
     {
       return driveWithSetpointGenerator(() -> {
         Translation2d scaledInputs = SwerveMath.scaleTranslation(new Translation2d(
-            translationX.getAsDouble() * swerveDrive.getMaximumVelocity(),
-            translationY.getAsDouble() * swerveDrive.getMaximumVelocity()), 0.8);
+            translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+            translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()), 0.8);
 
         return new ChassisSpeeds(scaledInputs.getX(),
                                  scaledInputs.getY(),
-                                 rotationX.getAsDouble() * swerveDrive.getMaximumAngularVelocity());
+                                 rotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity());
       });
     } catch (Exception e)
     {
@@ -427,7 +438,7 @@ public class SwerveSubsystem extends SubsystemBase
                                                                       direction*headingX.getAsDouble(),
                                                                       direction*headingY.getAsDouble(),
                                                                       swerveDrive.getOdometryHeading().getRadians(),
-                                                                      swerveDrive.getMaximumVelocity()));
+                                                                      swerveDrive.getMaximumChassisVelocity()));
     });
   }
 
@@ -485,18 +496,6 @@ public class SwerveSubsystem extends SubsystemBase
   }
 
   /**
-   * Sets the maximum speed of the swerve drive.
-   *
-   * @param maximumSpeedInMetersPerSecond the maximum speed to set for the swerve drive in meters per second
-   */
-  public void setMaximumSpeed(double maximumSpeedInMetersPerSecond)
-  {
-    swerveDrive.setMaximumSpeed(maximumSpeedInMetersPerSecond,
-                                false,
-                                swerveDrive.swerveDriveConfiguration.physicalCharacteristics.optimalVoltage);
-  }
-
-  /**
    * Replaces the swerve module feedforward with a new SimpleMotorFeedforward object.
    *
    * @param kS the static gain of the feedforward
@@ -524,9 +523,9 @@ public class SwerveSubsystem extends SubsystemBase
       // Make the robot move
       double direction = isRedAlliance() && fieldRelative ? -1:1;
       swerveDrive.drive(SwerveMath.scaleTranslation(new Translation2d(
-                            direction*translationX.getAsDouble() * swerveDrive.getMaximumVelocity(),
-                            direction*translationY.getAsDouble() * swerveDrive.getMaximumVelocity()), 0.8),
-                        Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumAngularVelocity(),
+                            direction*translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+                            direction*translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()), 0.8),
+                        Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumChassisAngularVelocity(),
                         fieldRelative,
                         false);
     });

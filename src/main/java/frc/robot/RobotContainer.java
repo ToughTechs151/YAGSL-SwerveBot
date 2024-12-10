@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -98,6 +99,11 @@ public class RobotContainer
     () -> Constants.SPEED_SCALING_3 * driverXbox.getRightX() * -1,
     false);
 
+  Command driveSetpointGenSim = drivebase.driveWithSetpointGenerator(
+    () -> MathUtil.applyDeadband(driverXbox.getLeftY() * -1, OperatorConstants.LEFT_Y_DEADBAND),
+    () -> MathUtil.applyDeadband(driverXbox.getLeftX() * -1, OperatorConstants.LEFT_X_DEADBAND),
+    () -> driverXbox.getRightX() * -1);
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
@@ -137,15 +143,15 @@ public class RobotContainer
     // Configure the trigger bindings
     configureBindings();
 
-        // Setup chooser for selecting drive mode
-        driveChooser.setDefaultOption("Drive Mode - AngularVelocity", "angular");
-        driveChooser.addOption("Drive Mode - Direct Angle", "direct");
-        driveChooser.addOption("Drive Mode - Advanced", "advanced");
-        driveChooser.addOption("Drive Mode - Robot Oriented", "robot");
-        SmartDashboard.putData(driveChooser);
-    
-        setDriveMode();
-        solidRGB(128,128,0);
+    // Setup chooser for selecting drive mode
+    driveChooser.setDefaultOption("Drive Mode - AngularVelocity", "angular");
+    driveChooser.addOption("Drive Mode - Direct Angle", "direct");
+    driveChooser.addOption("Drive Mode - Advanced", "advanced");
+    driveChooser.addOption("Drive Mode - Robot Oriented", "robot");
+    SmartDashboard.putData(driveChooser);
+
+    setDriveMode();
+    solidRGB(128,128,0);
   }
 
   /**
@@ -157,7 +163,7 @@ public class RobotContainer
    */
   private void configureBindings()
   {
-    if (Robot.isSimulation())
+    if (RobotBase.isSimulation())
     {
       driverXbox.start().onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3, 3, new Rotation2d()))));
     }
