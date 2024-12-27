@@ -46,7 +46,6 @@ public class RobotContainer
   private final SwerveSubsystem       drivebase  = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
                                                                                 "swerve"));
 
-  private SendableChooser<String> driveChooser = new SendableChooser<>();
   private SendableChooser<Command> autoChooser;
 
   private AddressableLED led;
@@ -61,7 +60,7 @@ public class RobotContainer
   // right stick controls the rotational velocity 
   // buttons are quick rotation positions to different ways to face
   // WARNING: default buttons are on the same buttons as the ones defined in configureBindings
-  AbsoluteDriveAdv closedAbsoluteDriveAdv = new AbsoluteDriveAdv(drivebase,
+  Command closedAbsoluteDriveAdv = new AbsoluteDriveAdv(drivebase,
                                   () -> Constants.SPEED_SCALING_3*MathUtil.applyDeadband(-driverXbox.getLeftY(),
                                                                 OperatorConstants.DEADBAND),
                                   () -> Constants.SPEED_SCALING_3*MathUtil.applyDeadband(-driverXbox.getLeftX(),
@@ -71,7 +70,8 @@ public class RobotContainer
                                                           ()-> (driverXbox.getHID().getPOV() == 0),
                                                           ()-> (driverXbox.getHID().getPOV() == 180),
                                                           ()-> (driverXbox.getHID().getPOV() == 90),
-                                                          ()-> (driverXbox.getHID().getPOV() == 270));
+                                                          ()-> (driverXbox.getHID().getPOV() == 270))
+                                                          .withName("Absolute Advanced");
 
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled by angular velocity.
@@ -104,21 +104,27 @@ public class RobotContainer
   // controls are front-left positive
   // left stick controls translation
   // right stick controls the desired angle NOT angular rotation
-  Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
+  Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle)
+                                                    .withName("Direct Angle");
+
 
   // Applies deadbands and inverts controls because joysticks
   // are back-right positive while robot
   // controls are front-left positive
   // left stick controls translation
   // right stick controls the angular velocity of the robot
-  Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+  Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity)
+                                                       .withName("Angular Velocity");
+
 
   // Applies deadbands and inverts controls because joysticks
   // are back-right positive while robot
   // controls are front-left positive
   // left stick controls translation
   // right stick controls the angular velocity of the robot
-  Command driveRobotOrientedAngularVelocity = drivebase.driveFieldOriented(driveRobotOriented);
+  Command driveRobotOrientedAngularVelocity = drivebase.driveFieldOriented(driveRobotOriented)
+                                                        .withName("Robot Oriented");
+
 
   // Drive field oriented angular velocity using PathPlanner set point generator
   Command driveSetpointGen = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngle);
@@ -144,6 +150,18 @@ public class RobotContainer
   Command driveFieldOrientedDirectAngleKeyboard = drivebase.driveFieldOriented(driveDirectAngleKeyboard);
 
   Command driveSetpointGenKeyboard = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngleKeyboard);
+
+  // Available drive modes to select from the chooser
+  enum DriveMode {
+    DIRECT_ANGLE,
+    ABSOLUTE_ADVANCED,
+    ANGULAR_VELOCITY,
+    ROBOT_ORIENTED
+  }
+
+  // Drive mode chooser to allow changing mode each time TeleOp is enabled. Default is used if 
+  // chooser is not opened. Pull up on dashboard or sim GUI (SmartDashborad/SendableChooser[0])
+  SendableChooser<DriveMode> driveChooser = new SendableChooser<>();
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -178,6 +196,9 @@ public class RobotContainer
     autoChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData(autoChooser);
 
+    // Publish drive subsystem data for dashboard and logging
+    SmartDashboard.putData(drivebase);
+    
     // Publish PDP data for dashboard and logging
     SmartDashboard.putData(pdp);
 
@@ -185,13 +206,16 @@ public class RobotContainer
     configureBindings();
 
     // Setup chooser for selecting drive mode
-    driveChooser.setDefaultOption("Drive Mode - AngularVelocity", "angular");
-    driveChooser.addOption("Drive Mode - Direct Angle", "direct");
-    driveChooser.addOption("Drive Mode - Robot Oriented", "robot");
+    driveChooser.setDefaultOption("Drive Mode - AngularVelocity", DriveMode.ANGULAR_VELOCITY);
+    driveChooser.addOption("Drive Mode - Direct Angle", DriveMode.DIRECT_ANGLE);
+    driveChooser.addOption("Drive Mode - Advanced", DriveMode.ABSOLUTE_ADVANCED);
+    driveChooser.addOption("Drive Mode - Robot Oriented", DriveMode.ROBOT_ORIENTED);
     SmartDashboard.putData(driveChooser);
 
-    setDriveMode();
-    solidRGB(128,128,0);
+    // Set default drive mode to one that isn't direct angle to avoid transient after auto
+    drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
+
+    solidRGB(64,64,0);
   }
 
   /**
@@ -203,15 +227,7 @@ public class RobotContainer
    */
   private void configureBindings()
   {
-    // (Condition) ? Return-On-True : Return-on-False
-    drivebase.setDefaultCommand(!RobotBase.isSimulation() ?
-                                driveFieldOrientedDirectAngle :
-                                driveFieldOrientedDirectAngleKeyboard);
 
-    if (Robot.isSimulation())
-    {
-      driverXbox.start().onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3, 3, new Rotation2d()))));
-    }
     if (DriverStation.isTest())
     {
       drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity); // Overrides drive command above!
@@ -250,26 +266,29 @@ public class RobotContainer
     return autoChooser.getSelected();
   }
 
+  /**
+   * Use this to set the teleop drive mode by setting the default drive command.
+   *
+   */
   public void setDriveMode()
   {
     switch (driveChooser.getSelected()) {
-
-      case "direct":
+      case DIRECT_ANGLE:
         drivebase.setDefaultCommand(driveFieldOrientedDirectAngle);
         return;
 
-      case "advanced":
-        drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
-        return;
-
-      case "robot":
+      case ROBOT_ORIENTED:
         drivebase.setDefaultCommand(driveRobotOrientedAngularVelocity);
         return;
 
-      case "angular":
-      default:
-        drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);        
+      case ABSOLUTE_ADVANCED:
+        drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
+        return;
 
+      case ANGULAR_VELOCITY:
+      default:
+        drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
+        return;
 
     }
   }
