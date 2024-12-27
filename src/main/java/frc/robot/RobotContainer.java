@@ -79,18 +79,25 @@ public class RobotContainer
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
                                                                 () -> driverXbox.getLeftY() * -1,
                                                                 () -> driverXbox.getLeftX() * -1)
-                                                            .withControllerRotationAxis(driverXbox::getRightX)
+                                                            .withControllerRotationAxis(() -> driverXbox.getRightX() * -1)
                                                             .deadband(OperatorConstants.DEADBAND)
                                                             .scaleTranslation(0.8)
                                                             .allianceRelativeControl(true);
 
   /**
-   * Clone's the angular velocity input stream and converts it to a fieldRelative input stream.
+   * Clone's the angular velocity input stream and converts it to a fieldRelative direct angle input stream.
    */
-  SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(driverXbox::getRightX,
-                                                                                             driverXbox::getRightY)
+  SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(() -> driverXbox.getRightX() * -1,
+                                                                                             () -> driverXbox.getRightY() * -1)
                                                            .headingWhile(true);
 
+
+  /**
+   * Clone's the angular velocity input stream and converts it to a robotRelative input stream.
+   */
+  // This doesn't do what we want in 2025.1.1
+  SwerveInputStream driveRobotOriented = driveAngularVelocity.copy().robotRelative(true)
+                                                                    .allianceRelativeControl(false);
 
   // Applies deadbands and inverts controls because joysticks
   // are back-right positive while robot
@@ -106,9 +113,17 @@ public class RobotContainer
   // right stick controls the angular velocity of the robot
   Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
 
+  // Applies deadbands and inverts controls because joysticks
+  // are back-right positive while robot
+  // controls are front-left positive
+  // left stick controls translation
+  // right stick controls the angular velocity of the robot
+  Command driveRobotOrientedAngularVelocity = drivebase.driveFieldOriented(driveRobotOriented);
+
+  // Drive field oriented angular velocity using PathPlanner set point generator
   Command driveSetpointGen = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngle);
 
-  SwerveInputStream driveAngularVelocitySim = SwerveInputStream.of(drivebase.getSwerveDrive(),
+  SwerveInputStream driveAngularVelocityKeyboard = SwerveInputStream.of(drivebase.getSwerveDrive(),
                                                                    () -> -driverXbox.getLeftY(),
                                                                    () -> -driverXbox.getLeftX())
                                                                .withControllerRotationAxis(() -> driverXbox.getRawAxis(2))
@@ -116,7 +131,7 @@ public class RobotContainer
                                                                .scaleTranslation(0.8)
                                                                .allianceRelativeControl(true);
   // Derive the heading axis with math!
-  SwerveInputStream driveDirectAngleSim     = driveAngularVelocitySim.copy()
+  SwerveInputStream driveDirectAngleKeyboard     = driveAngularVelocityKeyboard.copy()
                                                                      .withControllerHeadingAxis(() -> Math.sin(
                                                                                                     driverXbox.getRawAxis(
                                                                                                         2) * Math.PI) * (Math.PI * 2),
@@ -126,9 +141,9 @@ public class RobotContainer
                                                                                                       (Math.PI * 2))
                                                                      .headingWhile(true);
 
-  Command driveFieldOrientedDirectAngleSim = drivebase.driveFieldOriented(driveDirectAngleSim);
+  Command driveFieldOrientedDirectAngleKeyboard = drivebase.driveFieldOriented(driveDirectAngleKeyboard);
 
-  Command driveSetpointGenSim = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngleSim);
+  Command driveSetpointGenKeyboard = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngleKeyboard);
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -172,7 +187,6 @@ public class RobotContainer
     // Setup chooser for selecting drive mode
     driveChooser.setDefaultOption("Drive Mode - AngularVelocity", "angular");
     driveChooser.addOption("Drive Mode - Direct Angle", "direct");
-    driveChooser.addOption("Drive Mode - Advanced", "advanced");
     driveChooser.addOption("Drive Mode - Robot Oriented", "robot");
     SmartDashboard.putData(driveChooser);
 
@@ -192,7 +206,7 @@ public class RobotContainer
     // (Condition) ? Return-On-True : Return-on-False
     drivebase.setDefaultCommand(!RobotBase.isSimulation() ?
                                 driveFieldOrientedDirectAngle :
-                                driveFieldOrientedDirectAngleSim);
+                                driveFieldOrientedDirectAngleKeyboard);
 
     if (Robot.isSimulation())
     {
@@ -248,9 +262,9 @@ public class RobotContainer
         drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
         return;
 
-      // case "robot":
-      //   drivebase.setDefaultCommand(driveRobotOrientedAngularVelocity);
-      //   return;
+      case "robot":
+        drivebase.setDefaultCommand(driveRobotOrientedAngularVelocity);
+        return;
 
       case "angular":
       default:
