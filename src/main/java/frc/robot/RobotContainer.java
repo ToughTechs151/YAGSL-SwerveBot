@@ -4,19 +4,24 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.PowerDistribution;
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -50,6 +55,17 @@ public class RobotContainer
 
   private AddressableLED led;
   private AddressableLEDBuffer ledBuffer;
+    // Create an LED pattern that will display a rainbow across
+  // all hues at maximum saturation and half brightness
+  private final LEDPattern rainbow = LEDPattern.rainbow(255, 128);
+
+  // Our LED strip has a density of 120 LEDs per meter
+  private static final Distance kLedSpacing = Meters.of(1 / 120.0);
+
+  // Create a new pattern that scrolls the rainbow pattern across the LED strip, moving at a speed
+  // of 1 meter per second.
+  private final LEDPattern scrollingRainbow =
+      rainbow.scrollAtAbsoluteSpeed(MetersPerSecond.of(1), kLedSpacing);
 
   private final PowerDistribution pdp = new PowerDistribution();
 
@@ -181,16 +197,17 @@ public class RobotContainer
         new InstantCommand(()->DataLogManager.log("... Goodbye")));
 
     NamedCommands.registerCommand(
-        "Set LED Red",
-        new InstantCommand(()->solidRGB(128,0,0)));
+        "Set_LED_Red",
+        new InstantCommand(()->solidColor(Color.kRed)));
 
     NamedCommands.registerCommand(
-        "Set LED Green",
-        new InstantCommand(()->solidRGB(0,128,0)));
+        "Set_LED_Green",
+        
+        new InstantCommand(()->solidColor(Color.kGreen)));
 
     NamedCommands.registerCommand(
-        "Set LED Blue",
-        new InstantCommand(()->solidRGB(0,0,128)));
+        "Set_LED_Blue",
+        new InstantCommand(()->solidColor(Color.kBlue)));
 
 
     autoChooser = AutoBuilder.buildAutoChooser();
@@ -214,8 +231,6 @@ public class RobotContainer
 
     // Set default drive mode to one that isn't direct angle to avoid transient after auto
     drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
-
-    solidRGB(64,64,0);
   }
 
   /**
@@ -318,6 +333,23 @@ public class RobotContainer
       // Sets the specified LED to the RGB values for red
       ledBuffer.setRGB(i, red, green, blue);
     }
+    led.setData(ledBuffer);
+  }
+
+  // Set all LEDs in the strip to a solid color
+  public void solidColor(Color color) {
+    // Create an LED pattern that sets the entire strip to solid a color
+    LEDPattern red = LEDPattern.solid(color);
+
+    // Apply the LED pattern to the data buffer
+    red.applyTo(ledBuffer);
+    led.setData(ledBuffer);
+  }
+
+  public void rainbow() {
+    // Update the buffer with the rainbow animation
+    scrollingRainbow.applyTo(ledBuffer);
+    // Set the LEDs
     led.setData(ledBuffer);
   }
 }
