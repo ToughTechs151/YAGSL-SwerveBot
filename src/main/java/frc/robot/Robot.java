@@ -141,6 +141,8 @@ public class Robot extends TimedRobot
       CommandScheduler.getInstance().cancelAll();
     }
     m_robotContainer.setDriveMode();
+    m_robotContainer.solidColor(Color.kCyan);
+
   }
 
   /**
@@ -149,7 +151,6 @@ public class Robot extends TimedRobot
   @Override
   public void teleopPeriodic()
   {
-    m_robotContainer.rainbow();
   }
 
   @Override
