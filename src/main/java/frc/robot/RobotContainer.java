@@ -228,9 +228,6 @@ public class RobotContainer
     driveChooser.addOption("Drive Mode - Advanced", DriveMode.ABSOLUTE_ADVANCED);
     driveChooser.addOption("Drive Mode - Robot Oriented", DriveMode.ROBOT_ORIENTED);
     SmartDashboard.putData(driveChooser);
-
-    // Set default drive mode to one that isn't direct angle to avoid transient after auto
-    drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
   }
 
   /**
@@ -245,8 +242,6 @@ public class RobotContainer
 
     if (DriverStation.isTest())
     {
-      drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity); // Overrides drive command above!
-
       driverXbox.b().whileTrue(drivebase.sysIdDriveMotorCommand());
       driverXbox.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
       driverXbox.y().whileTrue(drivebase.driveToDistanceCommand(1.0, 0.2));
