@@ -352,7 +352,18 @@ public class Vision
               new Translation3d(Units.inchesToMeters(1.75),
                                 Units.inchesToMeters(-10.25),
                                 Units.inchesToMeters(11.5)),
-               VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1));
+               VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1)),
+
+                   /**
+     * Back Camera
+     */
+    BACK_CAM("back",
+    new Rotation3d(0, Units.degreesToRadians(-25), 180),
+    new Translation3d(Units.inchesToMeters(-10.0),
+                      Units.inchesToMeters(0.0),
+                      Units.inchesToMeters(11.5)),
+    VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1));
+
 
     /**
      * Latency alert to use when high latency is detected.
