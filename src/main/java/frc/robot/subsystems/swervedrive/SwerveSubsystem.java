@@ -63,14 +63,7 @@ public class SwerveSubsystem extends SubsystemBase
    * Swerve drive object.
    */
   private final SwerveDrive         swerveDrive;
-  /**
-   * AprilTag field layout.
-   */
-  private final AprilTagFieldLayout aprilTagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo);
-  /**
-   * Enable vision odometry updates while driving.
-   */
-  private final boolean             visionDriveTest = Constants.ENABLE_VISION;
+
   /**
    * PhotonVision class to keep an accurate odometry.
    */
@@ -105,7 +98,7 @@ public class SwerveSubsystem extends SubsystemBase
     swerveDrive.setModuleEncoderAutoSynchronize(false,
                                                 1); // Enable if you want to resynchronize your absolute encoders and motor encoders periodically when they are not moving.
 //    swerveDrive.pushOffsetsToEncoders(); // Set the absolute encoder to be used over the internal encoder and push the offsets onto it. Throws warning if not possible
-    if (visionDriveTest)
+    if (Constants.ENABLE_VISION)
     {
       setupPhotonVision();
       // Stop the odometry thread if we are using vision that way we can synchronize updates better.
@@ -141,7 +134,7 @@ public class SwerveSubsystem extends SubsystemBase
   public void periodic()
   {
     // When vision is enabled we must manually update odometry in SwerveDrive
-    if (visionDriveTest)
+    if (Constants.ENABLE_VISION)
     {
       swerveDrive.updateOdometry();
       vision.updatePoseEstimation(swerveDrive);
@@ -224,29 +217,29 @@ public class SwerveSubsystem extends SubsystemBase
     PathfindingCommand.warmupCommand().schedule();
   }
 
-//  /**
-//   * Aim the robot at the target returned by PhotonVision.
-//   *
-//   * @return A {@link Command} which will run the alignment.
-//   */
-//  public Command aimAtTarget(Cameras camera)
-//  {
-//
-//    return run(() -> {
-//      Optional<PhotonPipelineResult> resultO = camera.getBestResult();
-//      if (resultO.isPresent())
-//      {
-//        var result = resultO.get();
-//        if (result.hasTargets())
-//        {
-//          drive(getTargetSpeeds(0,
-//                                0,
-//                                Rotation2d.fromDegrees(result.getBestTarget()
-//                                                             .getYaw()))); // Not sure if this will work, more math may be required.
-//        }
-//      }
-//    });
-//  }
+ /**
+  * Aim the robot at the target returned by PhotonVision.
+  *
+  * @return A {@link Command} which will run the alignment.
+  */
+ public Command aimAtTarget(Cameras camera)
+ {
+
+   return run(() -> {
+     Optional<PhotonPipelineResult> resultO = camera.getBestResult();
+     if (resultO.isPresent())
+     {
+       var result = resultO.get();
+       if (result.hasTargets())
+       {
+         drive(getTargetSpeeds(0,
+                               0,
+                               Rotation2d.fromDegrees(result.getBestTarget()
+                                                            .getYaw()))); // Not sure if this will work, more math may be required.
+       }
+     }
+   });
+ }
 
   /**
    * Get the path follower with events.
