@@ -4,6 +4,11 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Meter;
+
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import swervelib.math.Matter;
@@ -28,6 +33,9 @@ public final class Constants
   public static final double SPEED_SCALING_3 = Math.pow(SPEED_SCALING, 1/3.0); // Scale for inputs^3
 
   public static final Boolean ENABLE_VISION  = true;
+  public static final Pose2d START_POSE = new Pose2d(new Translation2d(Meter.of(7.95),
+                                                                       Meter.of(1.51)),
+                                                                       Rotation2d.fromDegrees(180));
   // Maximum speed of the robot in meters per second, used to limit acceleration.
 
 //  public static final class AutonConstants
