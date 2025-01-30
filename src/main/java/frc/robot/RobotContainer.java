@@ -28,7 +28,6 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.commands.swervedrive.drivebase.AbsoluteDriveAdv;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import swervelib.SwerveInputStream;
 
@@ -69,26 +68,6 @@ public class RobotContainer
 
   private final PowerDistribution pdp = new PowerDistribution();
 
-  // Applies deadbands and inverts controls because joysticks
-  // are back-right positive while robot
-  // controls are front-left positive
-  // left stick controls translation
-  // right stick controls the rotational velocity 
-  // buttons are quick rotation positions to different ways to face
-  // WARNING: default buttons are on the same buttons as the ones defined in configureBindings
-  Command closedAbsoluteDriveAdv = new AbsoluteDriveAdv(drivebase,
-                                  () -> Constants.SPEED_SCALING_3*MathUtil.applyDeadband(-driverXbox.getLeftY(),
-                                                                OperatorConstants.DEADBAND),
-                                  () -> Constants.SPEED_SCALING_3*MathUtil.applyDeadband(-driverXbox.getLeftX(),
-                                                                OperatorConstants.DEADBAND),
-                                  () -> Constants.SPEED_SCALING_3*MathUtil.applyDeadband(-driverXbox.getRightX(),
-                                                                OperatorConstants.RIGHT_X_DEADBAND),
-                                                          ()-> (driverXbox.getHID().getPOV() == 0),
-                                                          ()-> (driverXbox.getHID().getPOV() == 180),
-                                                          ()-> (driverXbox.getHID().getPOV() == 90),
-                                                          ()-> (driverXbox.getHID().getPOV() == 270))
-                                                          .withName("Absolute Advanced");
-
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled by angular velocity.
    */
@@ -111,9 +90,10 @@ public class RobotContainer
   /**
    * Clone's the angular velocity input stream and converts it to a robotRelative input stream.
    */
-  // This doesn't do what we want in 2025.1.1
   SwerveInputStream driveRobotOriented = driveAngularVelocity.copy().robotRelative(true)
                                                                     .allianceRelativeControl(false);
+
+  
 
   // Applies deadbands and inverts controls because joysticks
   // are back-right positive while robot
@@ -141,36 +121,53 @@ public class RobotContainer
   Command driveRobotOrientedAngularVelocity = drivebase.driveFieldOriented(driveRobotOriented)
                                                         .withName("Robot Oriented");
 
+  // Commands to shift robot position at low speed using POV
+  SwerveInputStream shiftForwardRobotOriented = SwerveInputStream.of(drivebase.getSwerveDrive(),
+      () -> 0.1,
+      () -> 0.0)
+      .withControllerRotationAxis(() -> 0.0)
+      .robotRelative(true)
+      .allianceRelativeControl(false);
 
-  // Drive field oriented angular velocity using PathPlanner set point generator
-  Command driveSetpointGen = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngle);
+  Command shiftForward = drivebase.driveFieldOriented(shiftForwardRobotOriented)
+      .withName("Shift Forward");
 
-  SwerveInputStream driveAngularVelocityKeyboard = SwerveInputStream.of(drivebase.getSwerveDrive(),
-                                                                   () -> -driverXbox.getLeftY(),
-                                                                   () -> -driverXbox.getLeftX())
-                                                               .withControllerRotationAxis(() -> driverXbox.getRawAxis(2))
-                                                               .deadband(OperatorConstants.DEADBAND)
-                                                               .scaleTranslation(0.8)
-                                                               .allianceRelativeControl(true);
-  // Derive the heading axis with math!
-  SwerveInputStream driveDirectAngleKeyboard     = driveAngularVelocityKeyboard.copy()
-                                                                     .withControllerHeadingAxis(() -> Math.sin(
-                                                                                                    driverXbox.getRawAxis(
-                                                                                                        2) * Math.PI) * (Math.PI * 2),
-                                                                                                () -> Math.cos(
-                                                                                                    driverXbox.getRawAxis(
-                                                                                                        2) * Math.PI) *
-                                                                                                      (Math.PI * 2))
-                                                                     .headingWhile(true);
+  // Commands to shift robot position at low speed using POV
+  SwerveInputStream shiftBackRobotOriented = SwerveInputStream.of(drivebase.getSwerveDrive(),
+      () -> -0.1,
+      () -> 0.0)
+      .withControllerRotationAxis(() -> 0.0)
+      .robotRelative(true)
+      .allianceRelativeControl(false);
 
-  Command driveFieldOrientedDirectAngleKeyboard = drivebase.driveFieldOriented(driveDirectAngleKeyboard);
+  Command shiftBack = drivebase.driveFieldOriented(shiftBackRobotOriented)
+      .withName("Shift Back");
 
-  Command driveSetpointGenKeyboard = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngleKeyboard);
+        // Commands to shift robot position at low speed using POV
+  SwerveInputStream shiftRightRobotOriented = SwerveInputStream.of(drivebase.getSwerveDrive(),
+  () -> 0.0,
+  () -> -0.1)
+  .withControllerRotationAxis(() -> 0.0)
+  .robotRelative(true)
+  .allianceRelativeControl(false);
+
+Command shiftRight = drivebase.driveFieldOriented(shiftRightRobotOriented)
+  .withName("Shift Right");
+
+    // Commands to shift robot position at low speed using POV
+    SwerveInputStream shiftLeftRobotOriented = SwerveInputStream.of(drivebase.getSwerveDrive(),
+    () -> 0.0,
+    () -> 0.1)
+    .withControllerRotationAxis(() -> 0.0)
+    .robotRelative(true)
+    .allianceRelativeControl(false);
+
+Command shiftLeft = drivebase.driveFieldOriented(shiftLeftRobotOriented)
+    .withName("Shift Left");
 
   // Available drive modes to select from the chooser
   enum DriveMode {
     DIRECT_ANGLE,
-    ABSOLUTE_ADVANCED,
     ANGULAR_VELOCITY,
     ROBOT_ORIENTED
   }
@@ -225,7 +222,6 @@ public class RobotContainer
     // Setup chooser for selecting drive mode
     driveChooser.setDefaultOption("Drive Mode - AngularVelocity", DriveMode.ANGULAR_VELOCITY);
     driveChooser.addOption("Drive Mode - Direct Angle", DriveMode.DIRECT_ANGLE);
-    driveChooser.addOption("Drive Mode - Advanced", DriveMode.ABSOLUTE_ADVANCED);
     driveChooser.addOption("Drive Mode - Robot Oriented", DriveMode.ROBOT_ORIENTED);
     SmartDashboard.putData(driveChooser);
   }
@@ -237,32 +233,22 @@ public class RobotContainer
    * {@link CommandXboxController Xbox}/{@link edu.wpi.first.wpilibj2.command.button.CommandPS4Controller PS4}
    * controllers or {@link edu.wpi.first.wpilibj2.command.button.CommandJoystick Flight joysticks}.
    */
-  private void configureBindings()
-  {
+  private void configureBindings() {
 
-    if (DriverStation.isTest())
-    {
-      driverXbox.b().whileTrue(drivebase.sysIdDriveMotorCommand());
-      driverXbox.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
-      driverXbox.y().whileTrue(drivebase.driveToDistanceCommand(1.0, 0.2));
-      driverXbox.start().onTrue((Commands.runOnce(drivebase::zeroGyro)));
-      driverXbox.back().whileTrue(drivebase.centerModulesCommand());
-      driverXbox.leftBumper().onTrue(Commands.none());
-      driverXbox.rightBumper().onTrue(Commands.none());
-    } else
-    {
-      driverXbox.a().onTrue((Commands.runOnce(drivebase::zeroGyroWithAlliance)));
-      driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
-      driverXbox.b().whileTrue(
-          drivebase.driveToPose(
-              new Pose2d(new Translation2d(1.0, 0.85), Rotation2d.fromDegrees(52.5)))
-                              );
-      driverXbox.y().whileTrue(Commands.none());
-      driverXbox.start().whileTrue(Commands.none());
-      driverXbox.back().whileTrue(Commands.none());
-      driverXbox.leftBumper().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
-      driverXbox.rightBumper().toggleOnTrue(driveRobotOrientedAngularVelocity);
-    }
+    driverXbox.a().onTrue((Commands.runOnce(drivebase::zeroGyroWithAlliance)));
+    driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
+    driverXbox.b().whileTrue(
+        drivebase.driveToPose(
+            new Pose2d(new Translation2d(1.0, 0.85), Rotation2d.fromDegrees(52.5))));
+    driverXbox.y().whileTrue(Commands.none());
+    driverXbox.start().whileTrue(Commands.none());
+    driverXbox.back().whileTrue(Commands.none());
+    driverXbox.leftBumper().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
+    driverXbox.rightBumper().toggleOnTrue(driveRobotOrientedAngularVelocity);
+    driverXbox.povUp().whileTrue(shiftForward);
+    driverXbox.povDown().whileTrue(shiftBack);
+    driverXbox.povRight().whileTrue(shiftRight);
+    driverXbox.povLeft().whileTrue(shiftLeft);
 
   }
 
@@ -289,10 +275,6 @@ public class RobotContainer
 
       case ROBOT_ORIENTED:
         drivebase.setDefaultCommand(driveRobotOrientedAngularVelocity);
-        return;
-
-      case ABSOLUTE_ADVANCED:
-        drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
         return;
 
       case ANGULAR_VELOCITY:
