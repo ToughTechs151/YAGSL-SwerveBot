@@ -33,6 +33,7 @@ public final class Constants
   public static final double SPEED_SCALING_3 = Math.pow(SPEED_SCALING, 1/3.0); // Scale for inputs^3
 
   public static final Boolean ENABLE_VISION  = true;
+  public static final Boolean USE_ALLIANCE  = false;
   public static final Pose2d START_POSE = new Pose2d(new Translation2d(Meter.of(7.95),
                                                                        Meter.of(1.51)),
                                                                        Rotation2d.fromDegrees(180));

@@ -98,7 +98,7 @@ public class RobotContainer
                                                             .withControllerRotationAxis(() -> driverXbox.getRightX() * -1)
                                                             .deadband(OperatorConstants.DEADBAND)
                                                             .scaleTranslation(0.8)
-                                                            .allianceRelativeControl(true);
+                                                            .allianceRelativeControl(Constants.USE_ALLIANCE);
 
   /**
    * Clone's the angular velocity input stream and converts it to a fieldRelative direct angle input stream.
