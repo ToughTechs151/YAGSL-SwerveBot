@@ -239,7 +239,7 @@ Command shiftLeft = drivebase.driveFieldOriented(shiftLeftRobotOriented)
     driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
     driverXbox.b().whileTrue(
         drivebase.driveToPose(
-            new Pose2d(new Translation2d(1.0, 0.85), Rotation2d.fromDegrees(52.5))));
+            new Pose2d(new Translation2d(3.75, 2.65), Rotation2d.fromDegrees(60.0))));
     driverXbox.y().whileTrue(Commands.none());
     driverXbox.start().whileTrue(Commands.none());
     driverXbox.back().whileTrue(Commands.none());
